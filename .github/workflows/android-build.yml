@@ -1,0 +1,44 @@
+name: Android Build
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Organizar archivos en carpetas
+        run: |
+          set -e
+          mkdir -p app/src/main/java/com/jr/gameplayai app/src/main/res/values app/src/main/res/xml
+          [ -f app-build.gradle.kts ] && mv app-build.gradle.kts app/build.gradle.kts
+          [ -f proguard-rules.pro ] && mv proguard-rules.pro app/proguard-rules.pro
+          [ -f AndroidManifest.xml ] && mv AndroidManifest.xml app/src/main/AndroidManifest.xml
+          [ -f strings.xml ] && mv strings.xml app/src/main/res/values/strings.xml
+          [ -f accessibility_service_config.xml ] && mv accessibility_service_config.xml app/src/main/res/xml/accessibility_service_config.xml
+          [ -f GamePlayAccessibilityService.kt ] && mv GamePlayAccessibilityService.kt app/src/main/java/com/jr/gameplayai/
+          [ -f MainActivity.kt ] && mv MainActivity.kt app/src/main/java/com/jr/gameplayai/
+          find . -path ./.git -prune -o -type f -not -path './.git/*' -print | sort
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.7
+
+      - name: Build debug APK
+        run: gradle assembleDebug --stacktrace
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GamePlayAIJR-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
